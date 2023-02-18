@@ -5,7 +5,7 @@ This repository contains my team's solutions to the coding assignments of the co
 ### Team
 
 - [Pratyush Sudhakar (ps2245)](https://github.com/pratyush1712)
-- Tushar Chaturvedi (tic4)
+- [Tushar Chaturvedi (tic4)](https://github.com/realTushar3012)
 
 ## Assignments
 
