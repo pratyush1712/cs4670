@@ -123,64 +123,64 @@ class Draw_linesTestCase(unittest.TestCase):
         )
 
 
-# def matches(list1, list2, rtol=1e-03):
-#     m = 0
-#     for l in list1:
-#         for sl in list2:
-#             if np.allclose(l, sl, rtol=rtol):
-#                 m += 1
-#     return m
+def matches(list1, list2, rtol=1e-03):
+    m = 0
+    for l in list1:
+        for sl in list2:
+            if np.allclose(l, sl, rtol=rtol):
+                m += 1
+    return m
 
 
-# class Hough_votingandLocalmaxTestCase(unittest.TestCase):
-#     def setUp(self):
-#         self.img = student.imread("test.png")
-#         self.gradmag, self.gradori = student.gradient(self.img)
-#         self.thetas = np.arange(-np.pi - np.pi / 40, np.pi + np.pi / 40, np.pi / 40)
-#         imgdiagonal = np.sqrt(self.img.shape[0] ** 2 + self.img.shape[1] ** 2)
-#         self.cs = np.arange(-imgdiagonal, imgdiagonal, 2)
-#         self.votes = student.hough_voting(
-#             self.gradmag, self.gradori, self.thetas, self.cs, 0.1, 0.3, np.pi / 40
-#         )
+class Hough_votingandLocalmaxTestCase(unittest.TestCase):
+    def setUp(self):
+        self.img = student.imread("test.png")
+        self.gradmag, self.gradori = student.gradient(self.img)
+        self.thetas = np.arange(-np.pi - np.pi / 40, np.pi + np.pi / 40, np.pi / 40)
+        imgdiagonal = np.sqrt(self.img.shape[0] ** 2 + self.img.shape[1] ** 2)
+        self.cs = np.arange(-imgdiagonal, imgdiagonal, 2)
+        self.votes = student.hough_voting(
+            self.gradmag, self.gradori, self.thetas, self.cs, 0.1, 0.3, np.pi / 40
+        )
 
-#     def testHough(self):
-#         idx = list(zip(*np.where(self.votes > 100)))
-#         sol_idx = [
-#             (21, 491),
-#             (21, 603),
-#             (41, 141),
-#             (41, 353),
-#             (61, 141),
-#             (61, 353),
-#             (81, 388),
-#             (81, 389),
-#             (81, 491),
-#             (81, 603),
-#         ]
-#         m = matches(idx, sol_idx, 0)
-#         self.assertTrue(
-#             m >= 7, "At least seven large cell values (>100 votes) were not found."
-#         )
-#         self.assertTrue(len(idx) < 20, "Too many large cell values (>100 votes).")
+    def testHough(self):
+        idx = list(zip(*np.where(self.votes > 100)))
+        sol_idx = [
+            (21, 491),
+            (21, 603),
+            (41, 141),
+            (41, 353),
+            (61, 141),
+            (61, 353),
+            (81, 388),
+            (81, 389),
+            (81, 491),
+            (81, 603),
+        ]
+        m = matches(idx, sol_idx, 0)
+        self.assertTrue(
+            m >= 7, "At least seven large cell values (>100 votes) were not found."
+        )
+        self.assertTrue(len(idx) < 20, "Too many large cell values (>100 votes).")
 
-#     def testLocalmax(self):
-#         lines = student.localmax(self.votes, self.thetas, self.cs, 20, 15)
-#         sol_lines = [
-#             (-1.5707963267948966, 274.89321881345245),
-#             (-1.5707963267948966, 498.89321881345245),
-#             (-1.0210176124166828, -11.10678118654755),
-#             (0.0, -425.10678118654755),
-#             (0.0, -1.1067811865475505),
-#             (1.0210176124166828, -215.10678118654755),
-#             (1.570796326794897, -425.10678118654755),
-#             (1.570796326794897, -1.1067811865475505),
-#             (3.1415926535897936, 68.89321881345245),
-#             (3.1415926535897936, 274.89321881345245),
-#             (3.1415926535897936, 498.89321881345245),
-#         ]
-#         m = matches(lines, sol_lines)
-#         self.assertTrue(m >= 7, "At least seven lines were not found.")
-#         self.assertTrue(len(lines) < 20, "Too many lines found.")
+    def testLocalmax(self):
+        lines = student.localmax(self.votes, self.thetas, self.cs, 20, 15)
+        sol_lines = [
+            (-1.5707963267948966, 274.89321881345245),
+            (-1.5707963267948966, 498.89321881345245),
+            (-1.0210176124166828, -11.10678118654755),
+            (0.0, -425.10678118654755),
+            (0.0, -1.1067811865475505),
+            (1.0210176124166828, -215.10678118654755),
+            (1.570796326794897, -425.10678118654755),
+            (1.570796326794897, -1.1067811865475505),
+            (3.1415926535897936, 68.89321881345245),
+            (3.1415926535897936, 274.89321881345245),
+            (3.1415926535897936, 498.89321881345245),
+        ]
+        m = matches(lines, sol_lines)
+        self.assertTrue(m >= 7, "At least seven lines were not found.")
+        self.assertTrue(len(lines) < 20, "Too many lines found.")
 
 
 if __name__ == "__main__":

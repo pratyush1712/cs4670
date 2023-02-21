@@ -67,19 +67,15 @@ def gaussian_filter(k, sigma):
 ### convolve with [[0.5],[0],[-0.5]] to get the Y derivative on each channel
 ### Return the gradient magnitude and the gradient orientation (use arctan2)
 def gradient(img):
-    # Convert to grayscale
     intensity = img[:, :, 0] * 0.2125 + img[:, :, 1] * 0.7154 + img[:, :, 2] * 0.0721
 
-    # Smooth with a 5x5 Gaussian
     smoothed = convolve(intensity, gaussian_filter(5, 1))
 
-    # Compute X and Y derivatives
-    dx = convolve(smoothed, np.array([[0.5, 0, -0.5]]))
-    dy = convolve(smoothed, np.array([[0.5], [0], [-0.5]]))
+    xd = convolve(smoothed, np.array([[0.5, 0, -0.5]]))
+    yd = convolve(smoothed, np.array([[0.5], [0], [-0.5]]))
 
-    # Compute gradient magnitude and orientation
-    gradmag = np.sqrt(dx**2 + dy**2)
-    gradori = np.arctan2(dy, dx)
+    gradmag = np.sqrt(xd**2 + yd**2)
+    gradori = np.arctan2(yd, xd)
 
     return gradmag, gradori
 
@@ -123,7 +119,18 @@ def draw_lines(img, lines, thresh):
 ### (b) Its distance from the (theta, c) line is less than thresh2, **and**
 ### (c) The difference between theta and the pixel's gradient orientation is less than thresh3
 def hough_voting(gradmag, gradori, thetas, cs, thresh1, thresh2, thresh3):
-    pass
+    height, width = gradmag.shape
+    votes = np.zeros((len(thetas), len(cs)))
+    for x, y in np.ndindex(height, width):
+        if gradmag[y, x] > thresh1:
+            for i, theta in enumerate(thetas):
+                for j, c in enumerate(cs):
+                    if (
+                        check_distance_from_line([x], [y], theta, c, thresh2)
+                        and np.abs(theta - gradori[y, x]) < thresh3
+                    ):
+                        votes[i, j] += 1
+    return votes
 
 
 ### TODO 8: Find local maxima in the array of votes. A (theta, c) pair counts as a local maxima if:
@@ -133,7 +140,21 @@ def hough_voting(gradmag, gradori, thetas, cs, thresh1, thresh2, thresh3):
 ### coordinate of the potential local maxima placing at the center.
 ### Return a list of (theta, c) pairs.
 def localmax(votes, thetas, cs, thresh, nbhd):
-    pass
+    height, width = votes.shape
+    lines = []
+    for x, y in np.ndindex(height, width):
+        if votes[y, x] > thresh:
+            if (
+                np.max(
+                    votes[
+                        max(0, y - nbhd // 2) : min(height, y + nbhd // 2 + 1),
+                        max(0, x - nbhd // 2) : min(width, x + nbhd // 2 + 1),
+                    ]
+                )
+                == votes[y, x]
+            ):
+                lines.append((thetas[y], cs[x]))
+    return lines
 
 
 # Final product: Identify lines using the Hough transform
