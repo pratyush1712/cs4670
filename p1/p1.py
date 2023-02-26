@@ -1,6 +1,5 @@
 import numpy as np
 from PIL import Image
-import math
 
 ############### ---------- Basic Image Processing ------ ##############
 
@@ -16,7 +15,8 @@ def imread(filename):
 ### TODO 2: Convolve an image (m x n x 3 or m x n) with a filter(l x k). Perform "same" filtering. Apply the filter to each channel if there are more than 1 channels
 def convolve(img, filt):
     filter = np.fliplr(np.flipud(filt))
-    if len(img.shape) == 2: img = np.expand_dims(img, 2)
+    if len(img.shape) == 2:
+        img = np.expand_dims(img, 2)
 
     height, width, channels = img.shape
     filt_h, filt_w = filter.shape
@@ -86,13 +86,8 @@ def gradient(img):
 ### The input x and y are numpy arrays of the same shape, representing the x and y coordinates of each pixel
 ### Return a boolean array that indicates True for pixels whose distance is less than the threshold
 def check_distance_from_line(x, y, theta, c, thresh):
-    x = np.array(x)
-    y = np.array(y)
-    distance = np.abs(x * np.cos(theta) + y * np.sin(theta) + c) / np.sqrt(
-        np.cos(theta) ** 2 + np.sin(theta) ** 2
-    )
-    out = distance < thresh
-    return out
+    distance = np.abs(x * np.cos(theta) + y * np.sin(theta) + c)
+    return distance < thresh
 
 
 ### TODO 6: Write a function to draw a set of lines on the image.
@@ -103,10 +98,12 @@ def check_distance_from_line(x, y, theta, c, thresh):
 def draw_lines(img, lines, thresh):
     img = np.copy(img)
     height, width, _ = img.shape
+    X = np.arange(width)
+    Y = np.arange(height)
+    xx, yy = np.meshgrid(X, Y)
     for theta, c in lines:
-        for x, y in np.ndindex(height, width):
-            if check_distance_from_line([x], [y], theta, c, thresh):
-                img[y, x, :] = [1, 0, 0]
+        distances = check_distance_from_line(xx, yy, theta, c, thresh)
+        img[distances, :] = [1, 0, 0]
     return img
 
 
@@ -118,16 +115,18 @@ def draw_lines(img, lines, thresh):
 ### (b) Its distance from the (theta, c) line is less than thresh2, **and**
 ### (c) The difference between theta and the pixel's gradient orientation is less than thresh3
 def hough_voting(gradmag, gradori, thetas, cs, thresh1, thresh2, thresh3):
-    out = np.zeros((len(thetas), len(cs)))
     height, width = gradmag.shape
-    x, y = np.meshgrid(np.arange(width), np.arange(height))
-    arr = np.where(gradmag > thresh1, True, False)
+    X = np.arange(width)
+    Y = np.arange(height)
+    xx, yy = np.meshgrid(X, Y)
+    resp = np.zeros((len(thetas), len(cs)))
+    check_1 = np.where(gradmag > thresh1, True, False)
     for i, theta in enumerate(thetas):
         for j, c in enumerate(cs):
-            distances = check_distance_from_line(x, y, theta, c, thresh2)
-            arr3 = np.where(np.abs(theta - gradori) < thresh3, True, False)
-            out[i, j] = np.sum(arr * distances * arr3)
-    return out
+            check_2 = check_distance_from_line(xx, yy, theta, c, thresh2)
+            check_3 = np.where(np.abs(theta - gradori) < thresh3, True, False)
+            resp[i, j] += np.sum(check_1 * check_2 * check_3)
+    return resp
 
 
 ### TODO 8: Find local maxima in the array of votes. A (theta, c) pair counts as a local maxima if:
@@ -137,21 +136,15 @@ def hough_voting(gradmag, gradori, thetas, cs, thresh1, thresh2, thresh3):
 ### coordinate of the potential local maxima placing at the center.
 ### Return a list of (theta, c) pairs.
 def localmax(votes, thetas, cs, thresh, nbhd):
-    out = []
-    thresh_points = np.argwhere(votes > thresh)
     padding = nbhd // 2
     padded = np.pad(votes, ((padding, padding), (padding, padding)), "constant")
-    for theta, c in thresh_points:
+    out = []
+    for theta, c in votes[votes > thresh]:
         vote_count = votes[theta, c]
-        flag = True
-        for i in range(theta - nbhd, theta + nbhd):
-            if not flag:
-                break
-            for j in range(c - padding, c + padding + 1):
-                if vote_count < padded[i, j]:
-                    flag = False
-                    break
-        if flag:
+        column_values = padded[
+            theta - nbhd : theta + nbhd + 1, c - padding : c + padding + 1
+        ]
+        if column_values.max() == padded[theta, c]:
             out.append((thetas[theta], cs[c]))
     return out
 
