@@ -139,12 +139,12 @@ def localmax(votes, thetas, cs, thresh, nbhd):
     padding = nbhd // 2
     padded = np.pad(votes, ((padding, padding), (padding, padding)), "constant")
     out = []
-    for theta, c in votes[votes > thresh]:
+    for theta, c in np.argwhere(votes > thresh):
         vote_count = votes[theta, c]
-        column_values = padded[
-            theta - nbhd : theta + nbhd + 1, c - padding : c + padding + 1
-        ]
-        if column_values.max() == padded[theta, c]:
+        for row in enumerate(padded[theta - nbhd : theta + nbhd]):
+            if vote_count < np.max(row[c - padding : c + padding + 1]):
+                break
+        else:
             out.append((thetas[theta], cs[c]))
     return out
 
