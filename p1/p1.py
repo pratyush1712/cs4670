@@ -16,8 +16,7 @@ def imread(filename):
 ### TODO 2: Convolve an image (m x n x 3 or m x n) with a filter(l x k). Perform "same" filtering. Apply the filter to each channel if there are more than 1 channels
 def convolve(img, filt):
     filter = np.fliplr(np.flipud(filt))
-    if len(img.shape) == 2:
-        img = np.expand_dims(img, 2)
+    if len(img.shape) == 2: img = np.expand_dims(img, 2)
 
     height, width, channels = img.shape
     filt_h, filt_w = filter.shape
@@ -87,13 +86,13 @@ def gradient(img):
 ### The input x and y are numpy arrays of the same shape, representing the x and y coordinates of each pixel
 ### Return a boolean array that indicates True for pixels whose distance is less than the threshold
 def check_distance_from_line(x, y, theta, c, thresh):
-    cos = np.cos([theta])[0]
-    sin = np.sin([theta])[0]
-
-    def dist(x, y):
-        return np.abs(x * cos + y * sin + c) / np.sqrt(cos**2 + sin**2)
-
-    return np.array([dist(x, y) < thresh for x, y in zip(x, y)])
+    x = np.array(x)
+    y = np.array(y)
+    distance = np.abs(x * np.cos(theta) + y * np.sin(theta) + c) / np.sqrt(
+        np.cos(theta) ** 2 + np.sin(theta) ** 2
+    )
+    out = distance < thresh
+    return out
 
 
 ### TODO 6: Write a function to draw a set of lines on the image.
@@ -119,18 +118,16 @@ def draw_lines(img, lines, thresh):
 ### (b) Its distance from the (theta, c) line is less than thresh2, **and**
 ### (c) The difference between theta and the pixel's gradient orientation is less than thresh3
 def hough_voting(gradmag, gradori, thetas, cs, thresh1, thresh2, thresh3):
+    out = np.zeros((len(thetas), len(cs)))
     height, width = gradmag.shape
-    votes = np.zeros((len(thetas), len(cs)))
-    for x, y in np.ndindex(height, width):
-        if gradmag[y, x] > thresh1:
-            for i, theta in enumerate(thetas):
-                for j, c in enumerate(cs):
-                    if (
-                        check_distance_from_line([x], [y], theta, c, thresh2)
-                        and np.abs(theta - gradori[y, x]) < thresh3
-                    ):
-                        votes[i, j] += 1
-    return votes
+    x, y = np.meshgrid(np.arange(width), np.arange(height))
+    arr = np.where(gradmag > thresh1, True, False)
+    for i, theta in enumerate(thetas):
+        for j, c in enumerate(cs):
+            distances = check_distance_from_line(x, y, theta, c, thresh2)
+            arr3 = np.where(np.abs(theta - gradori) < thresh3, True, False)
+            out[i, j] = np.sum(arr * distances * arr3)
+    return out
 
 
 ### TODO 8: Find local maxima in the array of votes. A (theta, c) pair counts as a local maxima if:
@@ -140,21 +137,23 @@ def hough_voting(gradmag, gradori, thetas, cs, thresh1, thresh2, thresh3):
 ### coordinate of the potential local maxima placing at the center.
 ### Return a list of (theta, c) pairs.
 def localmax(votes, thetas, cs, thresh, nbhd):
-    height, width = votes.shape
-    lines = []
-    for x, y in np.ndindex(height, width):
-        if votes[y, x] > thresh:
-            if (
-                np.max(
-                    votes[
-                        max(0, y - nbhd // 2) : min(height, y + nbhd // 2 + 1),
-                        max(0, x - nbhd // 2) : min(width, x + nbhd // 2 + 1),
-                    ]
-                )
-                == votes[y, x]
-            ):
-                lines.append((thetas[y], cs[x]))
-    return lines
+    out = []
+    thresh_points = np.argwhere(votes > thresh)
+    padding = nbhd // 2
+    padded = np.pad(votes, ((padding, padding), (padding, padding)), "constant")
+    for theta, c in thresh_points:
+        vote_count = votes[theta, c]
+        flag = True
+        for i in range(theta - nbhd, theta + nbhd):
+            if not flag:
+                break
+            for j in range(c - padding, c + padding + 1):
+                if vote_count < padded[i, j]:
+                    flag = False
+                    break
+        if flag:
+            out.append((thetas[theta], cs[c]))
+    return out
 
 
 # Final product: Identify lines using the Hough transform
