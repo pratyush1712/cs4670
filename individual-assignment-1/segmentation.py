@@ -6,9 +6,11 @@ def construct_graph(img):
 
     def loc(i, j):
         return i * width + j
-    
+
     def valid_point(i, j, ii, jj):
-        return ii >= 0 and ii < height and jj >= 0 and jj < width and (ii != i or jj != j)
+        return (
+            ii >= 0 and ii < height and jj >= 0 and jj < width and (ii != i or jj != j)
+        )
 
     length = height * width
     graph = np.zeros((length, length))
@@ -23,7 +25,7 @@ def construct_graph(img):
                 for jj_offset in range(-20, 21):
                     ii = i + ii_offset
                     jj = j + jj_offset
-                    if valid_point(i,j,ii,jj):
+                    if valid_point(i, j, ii, jj):
                         second_loc = loc(ii, jj)
                         graph[first_loc, second_loc] = get_w(i, j, ii, jj)
     return graph
