@@ -9,16 +9,17 @@ import transformations
 
 ## Helper functions ############################################################
 
+
 def inbounds(shape, indices):
-    '''
-        Input:
-            shape -- int tuple containing the shape of the array
-            indices -- int list containing the indices we are trying 
-                       to access within the array
-        Output:
-            True/False, depending on whether the indices are within the bounds of 
-            the array with the given shape
-    '''
+    """
+    Input:
+        shape -- int tuple containing the shape of the array
+        indices -- int list containing the indices we are trying
+                   to access within the array
+    Output:
+        True/False, depending on whether the indices are within the bounds of
+        the array with the given shape
+    """
     assert len(shape) == len(indices)
     for i, ind in enumerate(indices):
         if ind < 0 or ind >= shape[i]:
@@ -28,6 +29,7 @@ def inbounds(shape, indices):
 
 ## Keypoint detectors ##########################################################
 
+
 class KeypointDetector(object):
     # Implement in child classes
     def detectKeypoints(self, image):
@@ -35,14 +37,14 @@ class KeypointDetector(object):
 
 
 class DummyKeypointDetector(KeypointDetector):
-    '''
-        Compute silly example features. This doesn't do anything meaningful, but
-        may be useful to use as an example.
-    '''
+    """
+    Compute silly example features. This doesn't do anything meaningful, but
+    may be useful to use as an example.
+    """
 
     def detectKeypoints(self, image):
         image = image.astype(np.float32)
-        image /= 255.
+        image /= 255.0
         features = []
         height, width = image.shape[:2]
 
@@ -69,9 +71,8 @@ class DummyKeypointDetector(KeypointDetector):
 
 
 class HarrisKeypointDetector(KeypointDetector):
-
     def computeHarrisValues(self, srcImage):
-        '''
+        """
         Input:
             srcImage -- Grayscale input image in a numpy array with
                         values in [0, 1]. The dimensions are (rows, cols).
@@ -80,23 +81,41 @@ class HarrisKeypointDetector(KeypointDetector):
                            each pixel.
             orientationImage -- numpy array containing the orientation of the
                                 gradient at each pixel in degrees.
-        '''
+        """
         height, width = srcImage.shape[:2]
 
         harrisImage = np.zeros(srcImage.shape[:2])
         orientationImage = np.zeros(srcImage.shape[:2])
 
         # TODO 1: Compute the harris corner strength for 'srcImage' at
-        # each pixel and store in 'harrisImage'. Also compute an 
+        # each pixel and store in 'harrisImage'. Also compute an
         # orientation for each pixel and store it in 'orientationImage.'
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+
+        # compute the gradient
+        dx = ndimage.sobel(srcImage, axis=0)
+        dy = ndimage.sobel(srcImage, axis=1)
+
+        # compute the harris matrix
+        Ixx = dx**2
+        Iyy = dy**2
+        Ixy = dx * dy
+
+        # gaussian filter
+        A = ndimage.gaussian_filter(Ixx, 0.5)
+        B = ndimage.gaussian_filter(Ixy, 0.5)
+        C = ndimage.gaussian_filter(Iyy, 0.5)
+
+        # compute the harris score
+        harrisImage = (A * C) - (B**2) - 0.1 * ((A + C) ** 2)
+        orientationImage = np.degrees(np.arctan2(dx, dy))
+
         # TODO-BLOCK-END
 
         return harrisImage, orientationImage
 
     def computeLocalMaxima(self, harrisImage):
-        '''
+        """
         Input:
             harrisImage -- numpy array containing the Harris score at
                            each pixel.
@@ -105,18 +124,25 @@ class HarrisKeypointDetector(KeypointDetector):
                          each pixel, depending on whether
                          the pixel value is the local maxima in
                          its 7x7 neighborhood.
-        '''
-        destImage = np.zeros_like(harrisImage, np.bool)
+        """
+        destImage = np.zeros_like(harrisImage, bool)
 
         # TODO 2: Compute the local maxima image
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+        harrisImage = np.pad(harrisImage, 3, "constant", constant_values=0)
+        for i in range(3, harrisImage.shape[0] - 3):
+            for j in range(3, harrisImage.shape[1] - 3):
+                if harrisImage[i, j] == np.max(
+                    harrisImage[i - 3 : i + 4, j - 3 : j + 4]
+                ):
+                    destImage[i - 3, j - 3] = True
+
         # TODO-BLOCK-END
 
         return destImage
 
     def detectKeypoints(self, image):
-        '''
+        """
         Input:
             image -- BGR image with values between [0, 255]
         Output:
@@ -124,9 +150,9 @@ class HarrisKeypointDetector(KeypointDetector):
             coordinates of the detected keypoints, the angle of the gradient
             (in degrees), the detector response (Harris score for Harris detector)
             and set the size to 10.
-        '''
+        """
         image = image.astype(np.float32)
-        image /= 255.
+        image /= 255.0
         height, width = image.shape[:2]
         features = []
 
@@ -171,9 +197,8 @@ class ORBKeypointDetector(KeypointDetector):
         return detector.detect(image)
 
 
-
-
 ## Feature descriptors #########################################################
+
 
 class FeatureDescriptor(object):
     # Implement in child classes
@@ -183,16 +208,16 @@ class FeatureDescriptor(object):
 
 class SimpleFeatureDescriptor(FeatureDescriptor):
     def describeFeatures(self, image, keypoints):
-        '''
+        """
         Input:
             image -- BGR image with values between [0, 255]
             keypoints -- the detected features, we have to compute the feature
                          descriptors at the specified coordinates
         Output:
             desc -- K x 25 numpy array, where K is the number of keypoints
-        '''
+        """
         image = image.astype(np.float32)
-        image /= 255.
+        image /= 255.0
         grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         desc = np.zeros((len(keypoints), 5 * 5))
 
@@ -212,7 +237,7 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
 
 class MOPSFeatureDescriptor(FeatureDescriptor):
     def describeFeatures(self, image, keypoints):
-        '''
+        """
         Input:
             image -- BGR image with values between [0, 255]
             keypoints -- the detected features, we have to compute the feature
@@ -220,9 +245,9 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
         Output:
             desc -- K x W^2 numpy array, where K is the number of keypoints
                     and W is the window size
-        '''
+        """
         image = image.astype(np.float32)
-        image /= 255.
+        image /= 255.0
         # This image represents the window around the feature you need to
         # compute to store as the feature descriptor (row-major)
         windowSize = 8
@@ -246,8 +271,9 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
 
             # Call the warp affine function to do the mapping
             # It expects a 2x3 matrix
-            destImage = cv2.warpAffine(grayImage, transMx,
-                (windowSize, windowSize), flags=cv2.INTER_LINEAR)
+            destImage = cv2.warpAffine(
+                grayImage, transMx, (windowSize, windowSize), flags=cv2.INTER_LINEAR
+            )
 
             # TODO 6: Normalize the descriptor to have zero mean and unit
             # variance. If the variance is negligibly small (which we
@@ -268,8 +294,6 @@ class ORBFeatureDescriptor(KeypointDetector):
             desc = np.zeros((0, 128))
 
         return desc
-
-
 
 
 ## Feature matchers ############################################################
@@ -303,15 +327,16 @@ class FeatureMatcher(object):
     @staticmethod
     def applyHomography(pt, h):
         x, y = pt
-        d = h[6]*x + h[7]*y + h[8]
+        d = h[6] * x + h[7] * y + h[8]
 
-        return np.array([(h[0]*x + h[1]*y + h[2]) / d,
-            (h[3]*x + h[4]*y + h[5]) / d])
+        return np.array(
+            [(h[0] * x + h[1] * y + h[2]) / d, (h[3] * x + h[4] * y + h[5]) / d]
+        )
 
 
 class SSDFeatureMatcher(FeatureMatcher):
     def matchFeatures(self, desc1, desc2):
-        '''
+        """
         Input:
             desc1 -- the feature descriptors of image 1 stored in a numpy array,
                 dimensions: rows (number of key points) x
@@ -325,7 +350,7 @@ class SSDFeatureMatcher(FeatureMatcher):
                     queryIdx: The index of the feature in the first image
                     trainIdx: The index of the feature in the second image
                     distance: The distance between the two features
-        '''
+        """
         matches = []
         assert desc1.ndim == 2
         assert desc2.ndim == 2
@@ -348,7 +373,7 @@ class SSDFeatureMatcher(FeatureMatcher):
 
 class RatioFeatureMatcher(FeatureMatcher):
     def matchFeatures(self, desc1, desc2):
-        '''
+        """
         Input:
             desc1 -- the feature descriptors of image 1 stored in a numpy array,
                 dimensions: rows (number of key points) x
@@ -362,7 +387,7 @@ class RatioFeatureMatcher(FeatureMatcher):
                     queryIdx: The index of the feature in the first image
                     trainIdx: The index of the feature in the second image
                     distance: The ratio test score
-        '''
+        """
         matches = []
         assert desc1.ndim == 2
         assert desc2.ndim == 2
