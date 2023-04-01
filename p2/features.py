@@ -397,12 +397,23 @@ class SSDFeatureMatcher(FeatureMatcher):
         # Note: multiple features from the first image may match the same
         # feature in the second image.
         # TODO-BLOCK-BEGIN
-        spatial_dist = np.sum(
-            (desc1[:, np.newaxis, :] - desc2[np.newaxis, :, :]) ** 2, axis=2
-        )
-        for i, f in enumerate(spatial_dist):
-            dist = np.sum((f - desc2) ** 2, axis=1)
-            matches.append(cv2.DMatch(i, np.argmin(dist), np.min(dist)))
+
+        i = 0
+        desc1_len = len(desc1)
+        desc2_len = len(desc2)
+        while i < desc1_len:
+            dis_matrix = np.zeros(desc2_len)
+            j = 0
+            while j < desc2_len:
+                # Calculating and assigning the dis_matrix the euclidean dis
+                # between desc1 and desc2 the two feature vectors
+                euclidean_dis = spatial.distance.euclidean(desc1[i], desc2[j])
+                dis_matrix[j] = euclidean_dis
+                j = j + 1
+
+            min_axis = np.argmin(dis_matrix)
+            matches.append(cv2.DMatch(i, min_axis, dis_matrix[min_axis]))
+            i = i + 1
 
         # TODO-BLOCK-END
 
@@ -443,7 +454,30 @@ class RatioFeatureMatcher(FeatureMatcher):
         # Note: multiple features from the first image may match the same
         # feature in the second image.
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+
+        i = 0
+        desc1_len = len(desc1)
+        desc2_len = len(desc2)
+        while i < desc1_len:
+            dis_matrix = np.zeros(desc2_len)
+            j = 0
+            while j < desc2_len:
+                # Calculating and assigning the dis_matrix the euclidean dis
+                # between desc1 and desc2 the two feature vectors
+                euclidean_dis = spatial.distance.euclidean(desc1[i], desc2[j])
+                dis_matrix[j] = euclidean_dis
+                j = j + 1
+
+            min_axis = np.argmin(dis_matrix)
+            shortest_dis = dis_matrix[min_axis]
+
+            element = np.argpartition(dis_matrix, 2)[1]
+            next_shortest = dis_matrix[element]
+            dis_ratio = shortest_dis / next_shortest
+
+            matches.append(cv2.DMatch(i, min_axis, dis_ratio))
+
+            i = i + 1
         # TODO-BLOCK-END
 
         return matches
